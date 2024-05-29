@@ -7,5 +7,9 @@ api=Api(app)
 
 # import users.services as services   
 from users.services import registration_bp,login_bp
+from products.services import add_products_bp
+
 app.register_blueprint(registration_bp,url_prefix="/ecomm")
 app.register_blueprint(login_bp,url_prefix="/ecomm")
+
+app.register_blueprint(add_products_bp,url_prefix="/ecomm")

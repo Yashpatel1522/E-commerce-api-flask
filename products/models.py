@@ -17,4 +17,4 @@ class products(db.Model):
     )
 
     def __repr__(self):
-        return f"id = {self.id}  product name = {self.product_name}"
+        return f"id = {self.id},product name = {self.product_name},quantity = {self.quantity},price = {self.price}"

@@ -78,7 +78,7 @@ class registrations(db.app.Resource):
         )
         db.db.session.add(result)
         db.db.session.commit()
-        return ({"flag": True, "message": "Data is Inserted"},)
+        return ({"flag": True, "message": "Data is Inserted"},200)
 
 
 
@@ -102,7 +102,6 @@ class login(db.app.Resource):
             "email":args.email,
             "role":result.role
         }
-        print(db.app.login_status)
         return {"flag":True,"message":"Successfully login...."},200
 
 
