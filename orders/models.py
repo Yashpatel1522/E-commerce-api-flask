@@ -17,9 +17,9 @@ class orders(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     date = db.Column(db.Date, nullable=False)
 
-    users = db.relationship(
-        "orderdetails", cascade="all, delete-orphan", backref="orders"
-    )
+    # users = db.relationship(
+    #     "orderdetails", cascade="all, delete-orphan", backref="orders"
+    # )
 
     def __repr__(self):
         return {f"id = {self.id} price = {self.date}"}
