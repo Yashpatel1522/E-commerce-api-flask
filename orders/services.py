@@ -57,12 +57,14 @@ class order(db.app.Resource):
                         date=datetime.now(),
                         price=i[3],
                     )
-                    result2 = carts.query.filter(carts.product_id==i[0], carts.user_id==user_data.id).first()
+                    result2 = carts.query.filter(
+                        carts.product_id == i[0], carts.user_id == user_data.id
+                    ).first()
                     db.db.session.add(result)
                     db.db.session.delete(result2)
                     db.db.session.commit()
 
-                db.app.abort(200,message="order placed....")
+                db.app.abort(200, message="order placed....")
             else:
                 db.app.abort(400, message="unauthorised user......")
         else:
