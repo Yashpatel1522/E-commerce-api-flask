@@ -4,6 +4,7 @@ from users.models import users
 from products.models import products
 from .models import orders, orderdetails
 from datetime import datetime
+from flask import Response
 
 get_cart_fields = {
     "product_name": db.app.fields.String,
@@ -15,41 +16,40 @@ get_cart_fields = {
 
 
 class order(db.app.Resource):
-    @db.app.marshal_with(get_cart_fields)
+    # @db.app.marshal_with(get_cart_fields)
     def post(self):
         if db.app.login_status:
-            if db.app.login_status["role"] == "users":
-                user_data = users.query.filter_by(
-                    email=db.app.login_status["email"]
-                ).first()
-                cart_data = (
-                    carts.query.join(products)
-                    .filter(
-                        carts.product_id == products.id, carts.user_id == user_data.id
-                    )
-                    .with_entities(
-                        carts.product_id,
-                        carts.quantity,
-                        products.product_name,
-                        products.price,
-                    )
-                    .all()
+            # if db.app.login_status["role"] == "users" and db.app.login_status["role"] == "admin" :
+            user_data = users.query.filter_by(
+                email=db.app.login_status["email"]
+            ).first()
+            cart_data = (
+                carts.query.join(products)
+                .filter(carts.product_id == products.id, carts.user_id == user_data.id)
+                .with_entities(
+                    carts.product_id,
+                    carts.quantity,
+                    products.product_name,
+                    products.price,
                 )
-
-                for i in cart_data:
-                    result = products.query.filter_by(id=i[0]).first()
-                    if result.quantity < i[1]:
-                        db.app.abort(
-                            400,
-                            message=f"invalid quantity... please go to cart and update {i[2]}  quantity",
-                        )
-
+                .all()
+            )
+            for i in cart_data:
+                result = products.query.filter_by(id=i[0]).first()
+                if result.quantity < i[1]:
+                    db.app.abort(
+                        400,
+                        message=f"invalid quantity... please go to cart and update {i[2]}  quantity",
+                    )
+            try:
                 result = orders(user_id=user_data.id, date=datetime.now())
                 db.db.session.add(result)
                 db.db.session.commit()
+            except Exception as err:
+                return err
 
-                last_inserted_id = result.id
-
+            last_inserted_id = result.id
+            try:
                 for i in cart_data:
                     result = orderdetails(
                         order_id=last_inserted_id,
@@ -60,13 +60,19 @@ class order(db.app.Resource):
                     result2 = carts.query.filter(
                         carts.product_id == i[0], carts.user_id == user_data.id
                     ).first()
-                    db.db.session.add(result)
                     db.db.session.delete(result2)
+                    db.db.session.add(result)
                     db.db.session.commit()
+                    res = products.query.get(i[0])
+                    if res:
+                        res.quantity = int(res.quantity) - int(i[1])
+                        db.db.session.commit()
+            except Exception as err:
+                return err
+            db.app.abort(400, message="Order placed......")
 
-                db.app.abort(200, message="order placed....")
-            else:
-                db.app.abort(400, message="unauthorised user......")
+        # else:
+        #     db.app.abort(400, message="unauthorised user......")
         else:
             db.app.abort(400, message="login required......")
 

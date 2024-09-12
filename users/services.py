@@ -1,7 +1,8 @@
 import config as db
 import re
 from .models import users
-# =======================================================registration==============================================
+
+# =======================================================registration Validations==============================================
 registrations_post_arguments = db.app.reqparse.RequestParser()
 registrations_post_arguments.add_argument(
     "role", type=str, help="Enter Role :", required=True
@@ -46,8 +47,10 @@ def check_contact(number):
 
 
 class registrations(db.app.Resource):
+    # ===================================================Add New User (Registration)==============================================
 
     def post(self):
+
         args = registrations_post_arguments.parse_args()
         if is_num(args["role"]):
             db.app.abort(400, message="Invalid Role")
@@ -58,7 +61,7 @@ class registrations(db.app.Resource):
             db.app.abort(400, message="Invalid Email")
         if check_contact(args["contact"]):
             db.app.abort(400, message="Invalid Contact")
-        
+
         data = users.query.filter_by(email=args["email"]).first()
         if data:
             db.app.abort(409, message="Email Already Exists")
@@ -69,47 +72,50 @@ class registrations(db.app.Resource):
         ):
             db.app.abort(400, message="Passwords is Invalid")
         # print(len(args.password))
-        result = users(
-            role=args["role"],
-            name=args["name"],
-            email=args["email"],
-            contact=args["contact"],
-            password=args.password,
-        )
-        db.db.session.add(result)
-        db.db.session.commit()
-        return ({"flag": True, "message": "Data is Inserted"},200)
-
-
+        try:
+            result = users(
+                role=args["role"],
+                name=args["name"],
+                email=args["email"],
+                contact=args["contact"],
+                password=args.password,
+            )
+            db.db.session.add(result)
+            db.db.session.commit()
+            return ({"flag": True, "message": "Data is Inserted"}, 200)
+        except Exception as err:
+            return err
 
 
 # =======================================================login======================================================
 
-login_post_request=db.app.reqparse.RequestParser()
-login_post_request.add_argument("email",type=str,help="Enter Email",required=True)
-login_post_request.add_argument("password",type=str,help="Enter password",required=False)
+login_post_request = db.app.reqparse.RequestParser()
+login_post_request.add_argument("email", type=str, help="Enter Email", required=True)
+login_post_request.add_argument(
+    "password", type=str, help="Enter password", required=False
+)
+
+
 class login(db.app.Resource):
+    # ===================================================Login==============================================
+
     def post(self):
-        args=login_post_request.parse_args()
-        result=users.query.filter_by(email=args.email).first()
+        args = login_post_request.parse_args()
+        result = users.query.filter_by(email=args.email).first()
         if not result:
-            db.app.abort(404,message="Not Found")
+            db.app.abort(404, message="Not Found")
 
-        if not(result.password == args.password):
-            db.app.abort(400,message="Wrong Password")
-        
-        db.app.login_status={
-            "email":args.email,
-            "role":result.role
-        }
-        return {"flag":True,"message":"Successfully login...."},200
+        if not (result.password == args.password):
+            db.app.abort(400, message="Wrong Password")
+
+        db.app.login_status = {"email": args.email, "role": result.role}
+        return {"flag": True, "message": "Successfully login...."}, 200
 
 
-
-registration_bp=db.app.Blueprint("registration",__name__)
-api=db.app.Api(registration_bp)
+registration_bp = db.app.Blueprint("registration", __name__)
+api = db.app.Api(registration_bp)
 api.add_resource(registrations, "/registration")
 
-login_bp=db.app.Blueprint("login",__name__)
-api=db.app.Api(login_bp)
+login_bp = db.app.Blueprint("login", __name__)
+api = db.app.Api(login_bp)
 api.add_resource(login, "/login")

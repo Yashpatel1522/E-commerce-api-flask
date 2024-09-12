@@ -40,21 +40,27 @@ class add_products(db.app.Resource):
                     db.app.abort(
                         400, message="please enter valid input for products name"
                     )
-                result = products(
-                    product_name=args.product_name,
-                    quantity=args.quantity,
-                    price=args.price,
-                )
-                db.db.session.add(result)
-                db.db.session.commit()
-                return {"flag": True, "message": "Products Added....."}, 200
+                try:
+                    result = products(
+                        product_name=args.product_name,
+                        quantity=args.quantity,
+                        price=args.price,
+                    )
+                    db.db.session.add(result)
+                    db.db.session.commit()
+                    return {"flag": True, "message": "Products Added....."}, 200
+                except Exception as err:
+                    return err
             else:
                 db.app.abort(400, message="unauthorised user......")
         else:
             db.app.abort(400, message="login required......")
 
+    # ===================================================Get All Products ==============================================
+
     @db.app.marshal_with(get_resources_fields)
     def get(self):
+
         if db.app.login_status:
             if db.app.login_status["role"] == "admin":
                 result = products.query.all()
@@ -67,6 +73,7 @@ class add_products(db.app.Resource):
         else:
             db.app.abort(400, message="login required......")
 
+    # ===================================================Update Products with id==============================================
     # @db.app.marshal_with(patch_resources_fields)
     def patch(self, id):
         if db.app.login_status:
@@ -82,48 +89,52 @@ class add_products(db.app.Resource):
                     and args.price == None
                 ):
                     db.app.abort(400, message="Content is Empty")
-                if args.product_name:
-                    result.product_name = args.product_name
-                if args.quantity:
-                    result.quantity = args.quantity
-                if args.price:
-                    result.price = args.price
-                
-                db.db.session.add(result)
-                db.db.session.commit()
-                return {
-                    "flag":True,
-                    "message":"data updated....."
-                },200
+                try:
+                    if args.product_name:
+                        result.product_name = args.product_name
+                    if args.quantity:
+                        result.quantity = args.quantity
+                    if args.price:
+                        result.price = args.price
+
+                    db.db.session.add(result)
+                    db.db.session.commit()
+                    return {"flag": True, "message": "data updated....."}, 200
+                except Exception as err:
+                    return err
             else:
                 db.app.abort(400, message="unauthorised user......")
         else:
             db.app.abort(400, message="login required......")
 
+    # ===================================================Delete Products with id==============================================
     def delete(self, id):
         if db.app.login_status:
             if db.app.login_status["role"] == "admin":
-                result = products.query.filter_by(id=id).first()
-                if not result:
-                    db.app.abort(404, message="Not Found....")
-                
-                db.db.session.delete(result)
-                db.db.session.commit()
-                return {
-                    "flag":True,
-                    "message":"data deleted....."
-                },200
+                try:
+                    result = products.query.filter_by(id=id).first()
+                    if not result:
+                        db.app.abort(404, message="Not Found....")
+
+                    db.db.session.delete(result)
+                    db.db.session.commit()
+                    return {"flag": True, "message": "data deleted....."}, 200
+                except Exception as err:
+                    return err
             else:
                 db.app.abort(400, message="unauthorised user......")
         else:
             db.app.abort(400, message="login required......")
 
-# ===================================================get products==============================================
+
+# ===================================================Blueprints Registrations==============================================
 
 
 add_products_bp = db.app.Blueprint("add_products", __name__)
 api = db.app.Api(add_products_bp)
-api.add_resource(add_products, "/products", "/products", "/products/<int:id>","/products/<int:id>")
+api.add_resource(
+    add_products, "/products", "/products", "/products/<int:id>", "/products/<int:id>"
+)
 
 
 # get_products_db=db.app.Blueprint("get_products",__name__)
